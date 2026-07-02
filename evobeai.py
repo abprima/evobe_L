@@ -158,7 +158,7 @@ def calculate_percentage(df, cpl_columns):
 
 
 # Create tabs using st.tabs()
-tabs = st.tabs(["📊 CPMKi Tabulation & Evaluation", "📈 CPL Tabulation & Evaluation"])
+tabs = st.tabs(["📊 CPMK Tabulation & Evaluation", "📈 CPL Tabulation & Evaluation"])
 
 # --------------------------
 # Tab 1: Password and Button
