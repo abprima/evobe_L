@@ -19,11 +19,18 @@ DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD") 
 
+engine_dfsql = create_engine(
+    f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}",
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    future=True
+)
+
 # Initialize session state variable to track whether Tab 2 and Tab 3 are activated
 if 'tab2_activated' not in st.session_state:
     st.session_state.tab2_activated = False
-if 'tab3_activated' not in st.session_state:
-    st.session_state.tab3_activated = False
+# if 'tab3_activated' not in st.session_state:
+#     st.session_state.tab3_activated = False
 if "visibility" not in st.session_state:
     st.session_state.visibility = "visible"
     st.session_state.disabled = False
@@ -256,20 +263,6 @@ with tabs[0]:
 
 
                         df_fix = merged_transposed_df[['NPM', 'Nama']].drop_duplicates().copy()
-
-                        # for i in range(num_cpmk_columns):
-                        #     cpmk_column_name = f'CPMK{i+1}'
-                        #     df_fix[cpmk_column_name] = None
-
-                        # for npm in df_fix['NPM']:
-                        #     student_df = merged_transposed_df[merged_transposed_df['NPM'] == npm]
-
-                        #     for i, cpmk_column in enumerate(cpmk_columns):
-                        #         cpmk_multiplied_column_name = f"CPMK{i+1}_multiplied"
-                        #         cpmk_fix_column_name = f"CPMK{i+1}"
-                        #         vertical_sum = student_df[cpmk_multiplied_column_name].sum()
-                        #         normalized_value = (vertical_sum / cpmk_sums[cpmk_column]).round(2)
-                        #         df_fix.loc[df_fix['NPM'] == npm, cpmk_fix_column_name] = normalized_value
 
                         for cpmk_column in cpmk_columns:
                             df_fix[cpmk_column] = None  # CPMK3, CPMK4, dst.
@@ -662,6 +655,10 @@ with tabs[1]:
 
         # Convert the result_data to a DataFrame
         final_df = pd.DataFrame(result_data)
+        # Add metadata
+        final_df["Kode MK"] = merged_processed_dfs["Kode"].iloc[0]
+        final_df["Mata Kuliah"] = merged_processed_dfs["Mata Kuliah"].iloc[0]
+        final_df["Kluster"] = merged_processed_dfs["Kluster"].iloc[0]
         cpl_columns_clean = [col for col in final_df.columns if col.startswith('CPL')]
         final_df.rename(columns={col: col.split('_')[0] for col in cpl_columns_clean}, inplace=True)
         st.markdown(f'<h4 style="font-size: 18px; font-weight: bold;">Table CPMK x CPL for {merged_processed_dfs["Mata Kuliah"].iloc[0]} ({merged_processed_dfs["Kode"].iloc[0]})</h4>', unsafe_allow_html=True)
@@ -721,7 +718,72 @@ with tabs[1]:
         # Call the function to plot the distribution
         plot_distribution(final_df, category_names, category_colors)
         st.pyplot(plt)
-        st.session_state.tab3_activated = True
+
+        # =====================================================
+        # Prepare Data for SQL
+        # =====================================================
+
+        sql_df = final_df.copy()
+
+        sql_df = sql_df.rename(columns={
+            "Kode MK": "course_code",
+            "Mata Kuliah": "course_name",
+            "Kluster": "kluster",
+            "Kriteria": "criteria",
+            "CPL1": "cpl1",
+            "CPL2": "cpl2",
+            "CPL3": "cpl3",
+            "CPL4": "cpl4",
+            "CPL5": "cpl5",
+            "CPL6": "cpl6",
+            "CPL7": "cpl7",
+            "CPL8": "cpl8",
+            "CPL9": "cpl9",
+            "CPL10": "cpl10"
+        })
+
+        # Arrange columns according to MySQL table
+        sql_df = sql_df[
+            [
+                "course_code",
+                "course_name",
+                "kluster",
+                "criteria",
+                "cpl1",
+                "cpl2",
+                "cpl3",
+                "cpl4",
+                "cpl5",
+                "cpl6",
+                "cpl7",
+                "cpl8",
+                "cpl9",
+                "cpl10"
+            ]
+        ]
+
+        st.write("SQL Preview")
+        st.dataframe(sql_df)
+
+        # st.session_state.tab3_activated = True
+
+        # Save button
+        if st.button("💾 Save to Database"):
+
+            try:
+
+                sql_df.to_sql(
+                    "course_cpl_summary",
+                    con=engine_dfsql,
+                    if_exists="append",
+                    index=False
+                )
+
+                st.success("✅ Successfully saved into MySQL!")
+
+            except Exception as e:
+
+                st.error(f"❌ Database Error:\n{e}")
 
     else:
         st.write("### 📈 CPL Tabulation & Evaluation is not activated yet ⛔️")
