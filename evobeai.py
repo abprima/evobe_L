@@ -723,56 +723,15 @@ with tabs[1]:
         # Prepare SQL DataFrame
         # =====================================================
 
-        finaldf_readysql = final_df.copy()
+        sql_df = final_df.copy()
 
-        # Add metadata
-        finaldf_readysql.insert(
-            0,
-            "course_code",
-            merged_processed_dfs["Kode"].iloc[0]
-        )
+        # Only add new metadata columns
+        sql_df["course_code"] = merged_processed_dfs["Kode"].iloc[0]
+        sql_df["kluster"] = merged_processed_dfs["Kluster"].iloc[0]
 
-        finaldf_readysql.insert(
-            1,
-            "course_name",
-            merged_processed_dfs["Mata Kuliah"].iloc[0]
-        )
-
-        finaldf_readysql.insert(
-            2,
-            "kluster",
-            merged_processed_dfs["Kluster"].iloc[0]
-        )
-
-        # Rename columns to match MySQL
-        finaldf_readysql.rename(
-            columns={
-                "Kriteria": "criteria",
-                "CPL1": "cpl1",
-                "CPL2": "cpl2",
-                "CPL3": "cpl3",
-                "CPL4": "cpl4",
-                "CPL5": "cpl5",
-                "CPL6": "cpl6",
-                "CPL7": "cpl7",
-                "CPL8": "cpl8",
-                "CPL9": "cpl9",
-                "CPL10": "cpl10"
-            },
-            inplace=True
-        )
-
-
-        # =====================================================
-        # Prepare Data for SQL
-        # =====================================================
-
-        sql_df = finaldf_readysql.copy()
-
-        sql_df = sql_df.rename(columns={
-            "Kode MK": "course_code",
+        # Rename existing columns
+        sql_df.rename(columns={
             "Mata Kuliah": "course_name",
-            "Kluster": "kluster",
             "Kriteria": "criteria",
             "CPL1": "cpl1",
             "CPL2": "cpl2",
@@ -784,9 +743,9 @@ with tabs[1]:
             "CPL8": "cpl8",
             "CPL9": "cpl9",
             "CPL10": "cpl10"
-        })
+        }, inplace=True)
 
-        # Arrange columns according to MySQL table
+        # Reorder columns
         sql_df = sql_df[
             [
                 "course_code",
@@ -806,12 +765,23 @@ with tabs[1]:
             ]
         ]
 
-        st.write("SQL Preview")
+        # Ensure CPL columns are numeric
+        cpl_columns = [f"cpl{i}" for i in range(1, 11)]
+
+        sql_df[cpl_columns] = (
+            sql_df[cpl_columns]
+            .apply(pd.to_numeric, errors="coerce")
+            .fillna(0)
+        )
+
+        # Preview before saving
+        st.write("### SQL Preview")
         st.dataframe(sql_df)
 
-        # st.session_state.tab3_activated = True
+        # =====================================================
+        # Save to MySQL
+        # =====================================================
 
-        # Save button
         if st.button("💾 Save to Database"):
 
             try:
