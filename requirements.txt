@@ -5,4 +5,5 @@ matplotlib
 openpyxl
 pandasai
 python-dotenv
-sqlalchemy
+SQLAlchemy
+PyMySQL
