@@ -75,11 +75,15 @@ def transposed_function(uploaded_files):
 
             dosen_pengampu = values_from_C[1] if len(values_from_C) > 1 else None
 
-            kode_kelas_full = values_from_C[2].split('/')[0] if len(values_from_C) > 2 else None
-            kluster = values_from_C[2].split('/')[2] if len(values_from_C) > 2 else None
+            kelas_info = values_from_C[2] if len(values_from_C) > 2 else None
 
-            kode_prodi = kode_kelas_full.split('-')[0] if kode_kelas_full else None
-            kode_kelas = kode_kelas_full.split('-')[1] if kode_kelas_full else None
+            kode_kelas_full = kelas_info.split('/')[0] if kelas_info else None
+            kluster = kelas_info.split('/')[2] if kelas_info else None
+
+            parts = kode_kelas_full.split('-') if kode_kelas_full else []
+
+            kode_prodi = parts[1] if len(parts) > 1 else None
+            kode_kelas = parts[2] if len(parts) > 2 else None
 
             df_process_1['Mata Kuliah'] = mata_kuliah
             df_process_1['Kode'] = kode_mata_kuliah
