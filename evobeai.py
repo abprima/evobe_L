@@ -659,10 +659,6 @@ with tabs[1]:
 
         # Convert the result_data to a DataFrame
         final_df = pd.DataFrame(result_data)
-        # Add metadata
-        final_df["Kode MK"] = merged_processed_dfs["Kode"].iloc[0]
-        final_df["Mata Kuliah"] = merged_processed_dfs["Mata Kuliah"].iloc[0]
-        final_df["Kluster"] = merged_processed_dfs["Kluster"].iloc[0]
         cpl_columns_clean = [col for col in final_df.columns if col.startswith('CPL')]
         final_df.rename(columns={col: col.split('_')[0] for col in cpl_columns_clean}, inplace=True)
         st.markdown(f'<h4 style="font-size: 18px; font-weight: bold;">Table CPMK x CPL for {merged_processed_dfs["Mata Kuliah"].iloc[0]} ({merged_processed_dfs["Kode"].iloc[0]})</h4>', unsafe_allow_html=True)
@@ -724,10 +720,54 @@ with tabs[1]:
         st.pyplot(plt)
 
         # =====================================================
+        # Prepare SQL DataFrame
+        # =====================================================
+
+        finaldf_readysql = final_df.copy()
+
+        # Add metadata
+        finaldf_readysql.insert(
+            0,
+            "course_code",
+            merged_processed_dfs["Kode"].iloc[0]
+        )
+
+        finaldf_readysql.insert(
+            1,
+            "course_name",
+            merged_processed_dfs["Mata Kuliah"].iloc[0]
+        )
+
+        finaldf_readysql.insert(
+            2,
+            "kluster",
+            merged_processed_dfs["Kluster"].iloc[0]
+        )
+
+        # Rename columns to match MySQL
+        finaldf_readysql.rename(
+            columns={
+                "Kriteria": "criteria",
+                "CPL1": "cpl1",
+                "CPL2": "cpl2",
+                "CPL3": "cpl3",
+                "CPL4": "cpl4",
+                "CPL5": "cpl5",
+                "CPL6": "cpl6",
+                "CPL7": "cpl7",
+                "CPL8": "cpl8",
+                "CPL9": "cpl9",
+                "CPL10": "cpl10"
+            },
+            inplace=True
+        )
+
+
+        # =====================================================
         # Prepare Data for SQL
         # =====================================================
 
-        sql_df = final_df.copy()
+        sql_df = finaldf_readysql.copy()
 
         sql_df = sql_df.rename(columns={
             "Kode MK": "course_code",
