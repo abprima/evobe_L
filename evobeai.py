@@ -634,7 +634,13 @@ with tabs[1]:
     
         df_merged_CPMK_CPL = df_merged.copy()
 
-        cpl_columns = ["CPL1_S1", "CPL2_S2", "CPL3_P1", "CPL4_P2", "CPL5_KU", "CPL6_KK1", "CPL7_KK2", "CPL8_KK3", "CPL9_KK4", "CPL10_KK5"]
+        TOTAL_CPL = 14
+
+        cpl_columns = [
+            f"CPL{i}"
+            for i in range(1, TOTAL_CPL+1)
+        ]        
+        
         categories_criteria = ['Excellent', 'Good', 'Poor', 'Fail']
 
         cpmk_selections = {}
@@ -683,9 +689,25 @@ with tabs[1]:
         # Create a function to plot the distribution
         def plot_distribution(df, category_names, category_colors):
             # Prepare the data: sum the values for each category
+
             results = {}
-            for cpl in df.columns[2:]:  # Skip 'Mata Kuliah' and 'Kriteria' columns
-                counts = df.groupby('Kriteria')[cpl].sum().reindex(category_names, fill_value=0)
+
+            # Only use CPLs that contain values
+            active_cpl = []
+
+            for cpl in df.columns[2:]:
+
+                if df[cpl].sum() > 0:
+                    active_cpl.append(cpl)
+
+            for cpl in active_cpl:
+
+                counts = (
+                    df.groupby("Kriteria")[cpl]
+                    .sum()
+                    .reindex(category_names, fill_value=0)
+                )
+
                 results[cpl] = counts.tolist()
 
             # Convert results to a format for plotting
@@ -767,6 +789,8 @@ with tabs[1]:
             "CPL13": "cpl13",
             "CPL14": "cpl14",
         }, inplace=True)
+
+        st.write(sql_df.columns.tolist())
 
         # Reorder columns
         sql_df = sql_df[
