@@ -653,11 +653,13 @@ with tabs[1]:
             df_merged_CPMK_CPL[col] = 0
 
         for cpmk, selections in cpmk_selections.items():
-            for selection in selections:
-                columns_to_update = [col for col in cpl_columns if selection in col]
 
-                for col in columns_to_update:
-                    df_merged_CPMK_CPL[col] = df_merged_CPMK_CPL.apply(lambda row: categorize(row[cpmk]) if row[cpmk] is not np.nan else 'Fail', axis=1) 
+            for cpl in selections:
+
+                df_merged_CPMK_CPL[cpl] = (
+                    df_merged_CPMK_CPL[cpmk]
+                    .apply(categorize)
+                )
 
             # Create a new dataframe to hold the result
             result_data = []
@@ -674,6 +676,39 @@ with tabs[1]:
                         row[cpl_column] = percentage_data.get(kriteria, 0)  # Get the percentage for the current category
                     
                     result_data.append(row)
+
+                    ########################################################
+                    # Build Summary Table
+                    ########################################################
+
+                    result_data=[]
+
+        ########################################################
+        # Build Summary Table
+        ########################################################
+
+        result_data = []
+
+        for mata_kuliah in df_merged_CPMK_CPL["Mata Kuliah"].unique():
+
+            temp = df_merged_CPMK_CPL[
+                df_merged_CPMK_CPL["Mata Kuliah"] == mata_kuliah
+            ]
+
+            for kategori in categories_criteria:
+
+                row = {
+                    "Mata Kuliah": mata_kuliah,
+                    "Kriteria": kategori
+                }
+
+                for cpl in cpl_columns:
+
+                    pct = calculate_percentage(temp, cpl)
+
+                    row[cpl] = pct[kategori]
+
+                result_data.append(row)
 
         # Convert the result_data to a DataFrame
         final_df = pd.DataFrame(result_data)
