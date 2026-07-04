@@ -276,24 +276,6 @@ with tabs[0]:
                                 normalized_value = (vertical_sum / denominator).round(2)
                                 df_fix.loc[df_fix['NPM'] == npm, cpmk_column] = normalized_value
 
-
-
-                        df_fix = merged_transposed_df[['NPM', 'Nama']].drop_duplicates().copy()
-
-                        for cpmk_column in cpmk_columns:
-                            df_fix[cpmk_column] = None  # CPMK3, CPMK4, dst.
-
-                        for npm in df_fix['NPM']:
-                            student_df = merged_transposed_df[merged_transposed_df['NPM'] == npm]
-
-                            for cpmk_column in cpmk_columns:
-                                cpmk_multiplied_column_name = cpmk_column + '_multiplied'  # ex: CPMK3_multiplied
-                                if cpmk_multiplied_column_name in student_df.columns:
-                                    vertical_sum = student_df[cpmk_multiplied_column_name].sum()
-                                    denominator = cpmk_sums.get(cpmk_column, 1)
-                                    normalized_value = (vertical_sum / denominator).round(2)
-                                    df_fix.loc[df_fix['NPM'] == npm, cpmk_column] = normalized_value
-
                         cols_to_lookup = ['NPM', 'Program Studi', 'Mata Kuliah', 'Kode', 'Dosen Pengampu', 'Kode Prodi', 'Kode Kelas', 'Kluster']
 
                         if 'NPM' in df_fix.columns and 'NPM' in merged_processed_dfs.columns:
@@ -301,6 +283,11 @@ with tabs[0]:
                             new_column_order = ['Mata Kuliah', 'Kode', 'Dosen Pengampu', 'Kode Prodi', 'Kode Kelas', 'Kluster'] + [col for col in df_merged.columns if col not in ['Mata Kuliah', 'Kode', 'Dosen Pengampu', 'Kode Prodi', 'Kode Kelas', 'Kluster']]
                             df_merged = df_merged[new_column_order]
                             st.write(df_merged)
+                            st.write(df_merged[cpmk_columns].describe())
+
+                            for c in cpmk_columns:
+                                st.write(c)
+                                st.write(df_merged[c].value_counts().sort_index())
                         else:
                             st.error("The 'NPM' column is missing in one of the DataFrames.")   
 
