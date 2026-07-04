@@ -617,32 +617,19 @@ with tabs[1]:
 
 
         st.write(df_merged_CPMK_CPL.head(20))
-        ########################################################
-        # Build Summary Table
-        ########################################################
+        st.write("========== MAPPING ==========")
+        st.write(cpmk_selections)
 
-        result_data = []
+        st.write("========== DISTRIBUTION ==========")
 
-        for mata_kuliah in df_merged_CPMK_CPL["Mata Kuliah"].unique():
+        for cpl in cpl_columns:
 
-            temp = df_merged_CPMK_CPL[
-                df_merged_CPMK_CPL["Mata Kuliah"] == mata_kuliah
-            ]
+            st.write(cpl)
 
-            for kategori in categories_criteria:
-
-                row = {
-                    "Mata Kuliah": mata_kuliah,
-                    "Kriteria": kategori
-                }
-
-                for cpl in cpl_columns:
-
-                    pct = calculate_percentage(temp, cpl)
-
-                    row[cpl] = pct[kategori]
-
-                result_data.append(row)
+            st.write(
+                df_merged_CPMK_CPL[cpl]
+                .value_counts(dropna=False)
+            )
 
         # Convert the result_data to a DataFrame
         final_df = pd.DataFrame(result_data)
