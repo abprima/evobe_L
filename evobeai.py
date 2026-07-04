@@ -755,21 +755,6 @@ with tabs[1]:
             # Convert results to a format for plotting
             labels = list(results.keys())
             data = np.array(list(results.values()))
-            st.write("========== DEBUG ==========")
-            st.write("Active CPL")
-            st.write(active_cpl)
-
-            st.write("Results")
-            st.write(results)
-
-            st.write("Data Before Numpy")
-            st.write(data)
-
-            data = np.array(data)
-
-            st.write("Shape")
-            st.write(data.shape)
-
             data_cum = data.cumsum(axis=1)
 
             fig, ax = plt.subplots(figsize=(9, 5))
@@ -847,6 +832,7 @@ with tabs[1]:
             "CPL14": "cpl14",
         }, inplace=True)
 
+        st.write("SQL Columns:")
         st.write(sql_df.columns.tolist())
 
         # Reorder columns
