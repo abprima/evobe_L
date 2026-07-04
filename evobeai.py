@@ -548,89 +548,9 @@ with tabs[1]:
     if st.session_state.tab2_activated:
         st.write("### 📈 CPL Tabulation & Evaluation")
        
-        st.markdown('<div style="text-align: justify; margin-bottom: 1em;">The CPL (Capaian Pembelajaran Lulusan) or Graduate Learning Outcomes refer to the set of competencies and achievements that students are expected to demonstrate upon completing their academic program. These outcomes are divided into several categories: Sikap (Attitudes/S), Pengetahuan (Knowledge/P), Keterampilan Umum (General Skills/KU), and Keterampilan Khusus (Specific Skills/KK). Below is the translation and explanation of each outcome:</div>', unsafe_allow_html=True)
-
-        st.write("###### CPL1 (S1: Contribution to Sharia Economic and Financial Development)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Demonstrate the ability to actively participate and contribute to the development of the Islamic economic and financial sector based on the values and principles of Ahlussunnah Wal Jamaah.'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.write("###### CPL2 (S2: Social Responsibility and Entrepreneurial Spirit)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Work collaboratively with others, demonstrate social responsibility, and uphold accountability in professional activities while embracing independence and an entrepreneurial mindset.'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.write("###### CPL3 (P1: Mastery of Islamic Economics and Finance)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Acquire comprehensive theoretical knowledge of Islamic economics and finance, and apply this knowledge systematically to formulate appropriate solutions for economic and financial problems.'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.write("###### CPL4 (P2: Critical Thinking and Scientific Communication)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Develop critical, logical, creative, innovative, and systematic thinking skills, while effectively communicating scientific ideas both orally and in writing using proper academic Indonesian in professional and scholarly contexts.'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.write("###### CPL5 (KU: Problem Solving and Professional Adaptability)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Apply professional knowledge and expertise to solve practical problems effectively while demonstrating adaptability to dynamic and evolving work environments.'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.write("###### CPL6 (KK1: Islamic Financial Industry Operations and Development)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Demonstrate the ability to operate, analyze, and contribute to the development of the Islamic financial industry through professional and analytical competencies.'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.write("###### CPL7 (KK2: Management of Islamic Financial Institutions)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Understand and apply management principles and practices in the effective administration and development of Islamic financial institutions and organizations.'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.write("###### CPL8 (KK3: Research, Development, and Problem Solving)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Conduct research and development activities related to the Islamic financial industry while providing effective problem-solving approaches to address financial and organizational challenges.'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.write("###### CPL9 (KK4: Application of Sharia Principles in Business)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Apply Sharia principles consistently in business planning, decision-making, and operational activities to ensure ethical, sustainable, and compliant business practices.'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.write("###### CPL10 (KK5: Sustainable Islamic Business Development)")
-        st.markdown(
-            '<div style="text-align: justify; margin-bottom: 1em;">'
-            'Develop sustainable business initiatives that create economic value while contributing to the welfare and prosperity of society in accordance with Islamic principles.'
-            '</div>',
-            unsafe_allow_html=True
-        )
+        st.markdown('<div style="text-align: justify; margin-bottom: 1em;">The CPL (Capaian Pembelajaran Lulusan) or Graduate Learning Outcomes refer to the set of competencies and achievements that students are expected to demonstrate upon completing their academic program. These outcomes are divided into several categories: Sikap (Attitudes/S), Pengetahuan (Knowledge/P), Keterampilan Umum (General Skills/KU), and Keterampilan Khusus (Specific Skills/KK).</div>', unsafe_allow_html=True)
        
-        st.write("1️⃣ Let's match each CPMK with the list of CPL outcomes from the list below! 👀")
+        st.write("✅ Let's match each CPMK with the list of CPL outcomes from the list below! 👀")
     
         df_merged_CPMK_CPL = df_merged.copy()
 
@@ -832,9 +752,6 @@ with tabs[1]:
             "CPL14": "cpl14",
         }, inplace=True)
 
-        st.write("SQL Columns:")
-        st.write(sql_df.columns.tolist())
-
         # Reorder columns
         sql_df = sql_df[
             [
@@ -870,10 +787,6 @@ with tabs[1]:
             .apply(pd.to_numeric, errors="coerce")
             .fillna(0)
         )
-
-        # Preview before saving
-        st.write("### SQL Preview")
-        st.dataframe(sql_df)
 
         # =====================================================
         # Save to MySQL
