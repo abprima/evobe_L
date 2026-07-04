@@ -841,7 +841,8 @@ with tabs[1]:
                 "department",
                 "course_code",
                 "course_name",
-                "kluster",
+                "academic_year",
+                "semester",
                 "criteria",
                 "cpl1",
                 "cpl2",
@@ -859,6 +860,7 @@ with tabs[1]:
                 "cpl14",
             ]
         ]
+
 
         # Ensure CPL columns are numeric
         cpl_columns = [f"cpl{i}" for i in range(1, 15)]
