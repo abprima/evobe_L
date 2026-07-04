@@ -552,6 +552,12 @@ with tabs[1]:
        
         st.write("✅ Let's match each CPMK with the list of CPL outcomes from the list below! 👀")
     
+        st.write("===== CPMK VALUES =====")
+        st.write(df_merged[cpmk_columns].describe())
+
+        for c in cpmk_columns:
+            st.write(c)
+            st.write(df_merged[c].value_counts().sort_index())    
         df_merged_CPMK_CPL = df_merged.copy()
 
         TOTAL_CPL = 14
