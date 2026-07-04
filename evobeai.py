@@ -728,17 +728,19 @@ with tabs[1]:
             results = {}
 
             # Only use CPLs that contain values
-            active_cpl = []
+            has_mapping = any(
+                len(v) > 0
+                for v in cpmk_selections.values()
+            )
 
-            for cpl in df.columns[2:]:
-
-                if df[cpl].sum() > 0:
-                    active_cpl.append(cpl)
-
-            # nothing selected
-            if len(active_cpl) == 0:
-                st.info("Please select at least one CPL mapping to display the distribution.")
-                return
+            if has_mapping:
+                active_cpl = [
+                    cpl
+                    for cpl in df.columns[2:]
+                    if df[cpl].sum() > 0
+                ]
+            else:
+                active_cpl = list(df.columns[2:])
 
             for cpl in active_cpl:
 
