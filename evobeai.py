@@ -735,6 +735,11 @@ with tabs[1]:
                 if df[cpl].sum() > 0:
                     active_cpl.append(cpl)
 
+            # nothing selected
+            if len(active_cpl) == 0:
+                st.info("Please select at least one CPL mapping to display the distribution.")
+                return
+
             for cpl in active_cpl:
 
                 counts = (
