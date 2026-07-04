@@ -574,19 +574,12 @@ with tabs[1]:
 
         for cpmk, selections in cpmk_selections.items():
 
-            for selection in selections:
+            for cpl in selections:
 
-                columns_to_update = [
-                    col for col in cpl_columns
-                    if selection in col
-                ]
-
-                for col in columns_to_update:
-
-                    df_merged_CPMK_CPL[col] = (
-                        df_merged_CPMK_CPL[cpmk]
-                        .apply(lambda x: categorize(x) if pd.notna(x) else "Fail")
-                    ) 
+                df_merged_CPMK_CPL[cpl] = (
+                    df_merged_CPMK_CPL[cpmk]
+                    .apply(categorize)
+                )
 
         ########################################################
         # Build Summary Table
