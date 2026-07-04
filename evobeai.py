@@ -85,14 +85,25 @@ def transposed_function(uploaded_files):
             kode_prodi = parts[1] if len(parts) > 1 else None
             kode_kelas = parts[2] if len(parts) > 2 else None
 
+            program_studi = None
+
+            for i in range(len(df_init)):
+                label = str(df_init.iloc[i,0]).strip().lower()
+
+                if "program studi" in label:
+                    program_studi = df_init.iloc[i,2]
+                    break
+
             df_process_1['Mata Kuliah'] = mata_kuliah
             df_process_1['Kode'] = kode_mata_kuliah
             df_process_1['Dosen Pengampu'] = dosen_pengampu
             df_process_1['Kode Prodi'] = kode_prodi
             df_process_1['Kode Kelas'] = kode_kelas
             df_process_1['Kluster'] = kluster
+            df_process_1['Program Studi'] = program_studi
 
             columns = [
+                'Program Studi',
                 'Mata Kuliah',
                 'Kode',
                 'Dosen Pengampu',
@@ -102,6 +113,7 @@ def transposed_function(uploaded_files):
             ] + [
                 col for col in df_process_1.columns
                 if col not in [
+                    'Program Studi',
                     'Mata Kuliah',
                     'Kode',
                     'Dosen Pengampu',
@@ -282,7 +294,7 @@ with tabs[0]:
                                     normalized_value = (vertical_sum / denominator).round(2)
                                     df_fix.loc[df_fix['NPM'] == npm, cpmk_column] = normalized_value
 
-                        cols_to_lookup = ['NPM', 'Mata Kuliah', 'Kode', 'Dosen Pengampu', 'Kode Prodi', 'Kode Kelas', 'Kluster']
+                        cols_to_lookup = ['NPM', 'Program Studi', 'Mata Kuliah', 'Kode', 'Dosen Pengampu', 'Kode Prodi', 'Kode Kelas', 'Kluster']
 
                         if 'NPM' in df_fix.columns and 'NPM' in merged_processed_dfs.columns:
                             df_merged = pd.merge(df_fix, merged_processed_dfs[cols_to_lookup], on='NPM', how='left')
@@ -726,8 +738,15 @@ with tabs[1]:
         sql_df = final_df.copy()
 
         # Only add new metadata columns
+
         sql_df["course_code"] = merged_processed_dfs["Kode"].iloc[0]
-        sql_df["kluster"] = merged_processed_dfs["Kluster"].iloc[0]
+        cluster = merged_processed_dfs["Kluster"].iloc[0]
+        parts = cluster.split()
+        academic_year = parts[0]
+        semester = parts[1]
+        sql_df["academic_year"]=academic_year
+        sql_df["semester"]=semester
+        sql_df["department"] = df_merged["Program Studi"].iloc[0]
 
         # Rename existing columns
         sql_df.rename(columns={
@@ -742,12 +761,17 @@ with tabs[1]:
             "CPL7": "cpl7",
             "CPL8": "cpl8",
             "CPL9": "cpl9",
-            "CPL10": "cpl10"
+            "CPL10": "cpl10",
+            "CPL11": "cpl11",
+            "CPL12": "cpl12",
+            "CPL13": "cpl13",
+            "CPL14": "cpl14",
         }, inplace=True)
 
         # Reorder columns
         sql_df = sql_df[
             [
+                "department",
                 "course_code",
                 "course_name",
                 "kluster",
@@ -761,12 +785,16 @@ with tabs[1]:
                 "cpl7",
                 "cpl8",
                 "cpl9",
-                "cpl10"
+                "cpl10",
+                "cpl11",
+                "cpl12",
+                "cpl13",
+                "cpl14",
             ]
         ]
 
         # Ensure CPL columns are numeric
-        cpl_columns = [f"cpl{i}" for i in range(1, 11)]
+        cpl_columns = [f"cpl{i}" for i in range(1, 15)]
 
         sql_df[cpl_columns] = (
             sql_df[cpl_columns]
