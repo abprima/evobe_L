@@ -610,7 +610,9 @@ with tabs[1]:
 
         for cpl in cpl_columns:
 
-            st.write(cpl)
+            st.write("==========", cpl, "==========")
+
+            st.write(df_merged_CPMK_CPL[[cpl]])
 
             st.write(
                 df_merged_CPMK_CPL[cpl]
