@@ -574,34 +574,46 @@ with tabs[1]:
 
         for cpmk, selections in cpmk_selections.items():
 
-            for cpl in selections:
+            for selection in selections:
 
-                df_merged_CPMK_CPL[cpl] = (
-                    df_merged_CPMK_CPL[cpmk]
-                    .apply(categorize)
-                )
+                columns_to_update = [
+                    col for col in cpl_columns
+                    if selection in col
+                ]
 
-            # Create a new dataframe to hold the result
-            result_data = []
+                for col in columns_to_update:
 
-            # Iterate over each unique "Mata Kuliah" (course) and calculate percentage for each CPL column
-            for mata_kuliah in df_merged_CPMK_CPL['Mata Kuliah'].unique():
-                for kriteria in categories_criteria:  # Iterate through categories Excellent, Good, Poor, Fail
-                    row = {'Mata Kuliah': mata_kuliah, 'Kriteria': kriteria}
-                    
-                    # For each CPL column, calculate percentage
-                    for cpl_column in cpl_columns:
-                        # Calculate percentage for the current CPL column and category
-                        percentage_data = calculate_percentage(df_merged_CPMK_CPL[df_merged_CPMK_CPL['Mata Kuliah'] == mata_kuliah], cpl_column)
-                        row[cpl_column] = percentage_data.get(kriteria, 0)  # Get the percentage for the current category
-                    
-                    result_data.append(row)
+                    df_merged_CPMK_CPL[col] = (
+                        df_merged_CPMK_CPL[cpmk]
+                        .apply(lambda x: categorize(x) if pd.notna(x) else "Fail")
+                    ) 
 
-                    ########################################################
-                    # Build Summary Table
-                    ########################################################
+        ########################################################
+        # Build Summary Table
+        ########################################################
 
-                    result_data=[]
+        result_data = []
+
+        for mata_kuliah in df_merged_CPMK_CPL["Mata Kuliah"].unique():
+
+            temp = df_merged_CPMK_CPL[
+                df_merged_CPMK_CPL["Mata Kuliah"] == mata_kuliah
+            ]
+
+            for kategori in categories_criteria:
+
+                row = {
+                    "Mata Kuliah": mata_kuliah,
+                    "Kriteria": kategori
+                }
+
+                for cpl in cpl_columns:
+
+                    pct = calculate_percentage(temp, cpl)
+
+                    row[cpl] = pct[kategori]
+
+                result_data.append(row)
 
 
         st.write(df_merged_CPMK_CPL.head(20))
