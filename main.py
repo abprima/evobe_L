@@ -2,15 +2,17 @@ import os
 import re
 from dotenv import load_dotenv
 import pandas as pd
+from pandasai import PandasAI
+from pandasai.llm.openai import OpenAI
 import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import MaxNLocator
-import matplotlib.colors as mcolors
+import matplotlib.colors as mcolors 
 from dotenv import load_dotenv
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 load_dotenv()
 
@@ -75,24 +77,21 @@ def transposed_function(uploaded_files):
 
             dosen_pengampu = values_from_C[1] if len(values_from_C) > 1 else None
 
-            kelas_info = values_from_C[2] if len(values_from_C) > 2 else None
+            kode_kelas_full = values_from_C[2].split('/')[0] if len(values_from_C) > 2 else None
+            kluster = values_from_C[2].split('/')[2] if len(values_from_C) > 2 else None
 
-            kode_kelas_full = kelas_info.split('/')[0] if kelas_info else None
-            kluster = kelas_info.split('/')[2] if kelas_info else None
+            match = re.search(
+                r"(?:Kls-)?(\d{3})-([A-Za-z]+\d+)-\d+",
+                kode_kelas_full,
+                re.IGNORECASE
+            )
 
-            parts = kode_kelas_full.split('-') if kode_kelas_full else []
-
-            kode_prodi = parts[1] if len(parts) > 1 else None
-            kode_kelas = parts[2] if len(parts) > 2 else None
-
-            program_studi = None
-
-            for i in range(len(df_init)):
-                label = str(df_init.iloc[i,0]).strip().lower()
-
-                if "program studi" in label:
-                    program_studi = df_init.iloc[i,2]
-                    break
+            if match:
+                kode_prodi = match.group(1)
+                kode_kelas = match.group(2)
+            else:
+                kode_prodi = None
+                kode_kelas = None
 
             df_process_1['Mata Kuliah'] = mata_kuliah
             df_process_1['Kode'] = kode_mata_kuliah
@@ -100,10 +99,8 @@ def transposed_function(uploaded_files):
             df_process_1['Kode Prodi'] = kode_prodi
             df_process_1['Kode Kelas'] = kode_kelas
             df_process_1['Kluster'] = kluster
-            df_process_1['Program Studi'] = program_studi
 
             columns = [
-                'Program Studi',
                 'Mata Kuliah',
                 'Kode',
                 'Dosen Pengampu',
@@ -113,7 +110,6 @@ def transposed_function(uploaded_files):
             ] + [
                 col for col in df_process_1.columns
                 if col not in [
-                    'Program Studi',
                     'Mata Kuliah',
                     'Kode',
                     'Dosen Pengampu',
@@ -187,14 +183,30 @@ tabs = st.tabs(["📊 CPMK Tabulation & Evaluation", "📈 CPL Tabulation & Eval
 # Tab 1: Password and Button
 # --------------------------
 with tabs[0]: 
+    st.subheader("📘 Lecturer Dashboard")
+
+    st.info("""
+    **This dashboard helps lecturers monitor and evaluate Capaian Pembelajaran Mata Kuliah (CPMK) achievement to support Continuous Quality Improvement (CQI).**
+    """)
+
+    with st.expander("❓ What questions can this dashboard answer?"):
+
+        st.markdown("""
+    - Have students successfully achieved each **Capaian Pembelajaran Mata Kuliah (CPMK)**?
+    - Which CPMKs have met or failed to meet the **60-point achievement threshold**?
+    - How does student performance compare across different **classes** of the same course?
+    - Which CPMKs require improvement in the next course offering?
+    - Are the current assessment methods effectively measuring the intended learning outcomes?
+    """)
+
     st.write("### 📊 CPMK Tabulation & Evaluation")
     # Prompt the user to enter the key/password
+    valid_members = os.getenv("MEMBERS", "").split(",")
     user_key = st.text_input("🔐 Please type (or paste) your membership unique key, then press Enter:")
     # Define the correct password/key (you can change it as needed)
-    correct_key = 'pbsakre'
 
     # Check if the entered key is correct
-    if user_key == correct_key:
+    if user_key in valid_members:
         st.write("Congrats! Your unique key is good to go! 🎉🥰")
 
         uploaded_files = st.file_uploader(
@@ -276,18 +288,29 @@ with tabs[0]:
                                 normalized_value = (vertical_sum / denominator).round(2)
                                 df_fix.loc[df_fix['NPM'] == npm, cpmk_column] = normalized_value
 
-                        cols_to_lookup = ['NPM', 'Program Studi', 'Mata Kuliah', 'Kode', 'Dosen Pengampu', 'Kode Prodi', 'Kode Kelas', 'Kluster']
+                        df_fix = merged_transposed_df[['NPM', 'Nama']].drop_duplicates().copy()
+
+                        for cpmk_column in cpmk_columns:
+                            df_fix[cpmk_column] = None  # CPMK3, CPMK4, dst.
+
+                        for npm in df_fix['NPM']:
+                            student_df = merged_transposed_df[merged_transposed_df['NPM'] == npm]
+
+                            for cpmk_column in cpmk_columns:
+                                cpmk_multiplied_column_name = cpmk_column + '_multiplied'  # ex: CPMK3_multiplied
+                                if cpmk_multiplied_column_name in student_df.columns:
+                                    vertical_sum = student_df[cpmk_multiplied_column_name].sum()
+                                    denominator = cpmk_sums.get(cpmk_column, 1)
+                                    normalized_value = (vertical_sum / denominator).round(2)
+                                    df_fix.loc[df_fix['NPM'] == npm, cpmk_column] = normalized_value
+
+                        cols_to_lookup = ['NPM', 'Mata Kuliah', 'Kode', 'Dosen Pengampu', 'Kode Prodi', 'Kode Kelas', 'Kluster']
 
                         if 'NPM' in df_fix.columns and 'NPM' in merged_processed_dfs.columns:
                             df_merged = pd.merge(df_fix, merged_processed_dfs[cols_to_lookup], on='NPM', how='left')
                             new_column_order = ['Mata Kuliah', 'Kode', 'Dosen Pengampu', 'Kode Prodi', 'Kode Kelas', 'Kluster'] + [col for col in df_merged.columns if col not in ['Mata Kuliah', 'Kode', 'Dosen Pengampu', 'Kode Prodi', 'Kode Kelas', 'Kluster']]
                             df_merged = df_merged[new_column_order]
-                            st.write(df_merged)
-                            st.write(df_merged[cpmk_columns].describe())
-
-                            for c in cpmk_columns:
-                                st.write(c)
-                                st.write(df_merged[c].value_counts().sort_index())
+                            # st.write(df_merged)
                         else:
                             st.error("The 'NPM' column is missing in one of the DataFrames.")   
 
@@ -524,36 +547,161 @@ with tabs[0]:
 
                             st.pyplot(plt)          
         
+                        if st.button("💾 Save Student CPMK Data"):
+
+                            try:
+
+                                df_sql = df_merged.copy()
+
+                                # ======================================
+                                # Extract Academic Year & Semester
+                                # ======================================
+
+                                cluster = str(df_sql["Kluster"].iloc[0])
+
+                                parts = cluster.split()
+
+                                df_sql["Academic Year"] = parts[0] if len(parts) > 0 else ""
+                                df_sql["Semester"] = parts[1] if len(parts) > 1 else ""
+
+                                # ======================================
+                                # Rename Columns
+                                # ======================================
+
+                                df_sql.rename(columns={
+                                    "Mata Kuliah": "course_name",
+                                    "Kode": "course_code",
+                                    "Dosen Pengampu": "lecturer",
+                                    "Kode Prodi": "program_code",
+                                    "Kode Kelas": "class_code",
+                                    "Kluster": "cluster",
+                                    "Academic Year": "academic_year",
+                                    "Semester": "semester",
+                                    "NPM": "student_id",
+                                    "Nama": "student_name",
+                                    "CPMK1": "cpmk1",
+                                    "CPMK2": "cpmk2",
+                                    "CPMK3": "cpmk3",
+                                    "CPMK4": "cpmk4",
+                                    "CPMK5": "cpmk5",
+                                    "CPMK6": "cpmk6",
+                                    "CPMK7": "cpmk7",
+                                    "CPMK8": "cpmk8",
+                                    "CPMK9": "cpmk9",
+                                    "CPMK10": "cpmk10",
+                                }, inplace=True)
+
+                                rename_dict = {}
+
+                                for col in df_sql.columns:
+
+                                    if str(col).upper().startswith("CPMK"):
+
+                                        number = re.search(r"\d+", str(col)).group()
+
+                                        rename_dict[col] = f"cpmk{number}"
+
+                                df_sql.rename(columns=rename_dict, inplace=True)
+
+
+                                # ======================================
+                                # Reorder Columns
+                                # ======================================
+
+                                desired_columns = [
+                                    "course_name",
+                                    "course_code",
+                                    "lecturer",
+                                    "program_code",
+                                    "class_code",
+                                    "cluster",
+                                    "academic_year",
+                                    "semester",
+                                    "student_id",
+                                    "student_name"
+                                ]
+
+                                # Add CPMK columns automatically
+                                cpmk_cols = sorted(
+                                    [c for c in df_sql.columns if c.lower().startswith("cpmk")],
+                                    key=lambda x: int(x.replace("cpmk", ""))
+                                )
+
+                                desired_columns.extend(cpmk_cols)
+
+                                df_sql = df_sql[desired_columns]
+
+                                # ======================================
+                                # Save to SQL
+                                # ======================================
+
+                                with engine_dfsql.begin() as conn:
+
+                                    delete_result = conn.execute(
+                                        text("""
+                                            DELETE FROM student_cpmk_result
+                                            WHERE course_code = :course_code
+                                            AND academic_year = :academic_year
+                                            AND semester = :semester
+                                            AND class_code = :class_code
+                                        """),
+                                        {
+                                            "course_code": df_sql["course_code"].iloc[0],
+                                            "academic_year": df_sql["academic_year"].iloc[0],
+                                            "semester": df_sql["semester"].iloc[0],
+                                            "class_code": df_sql["class_code"].iloc[0]
+                                        }
+                                    )
+
+                                    deleted_rows = delete_result.rowcount
+
+                                    df_sql.to_sql(
+                                        "student_cpmk_result",
+                                        con=conn,
+                                        if_exists="append",
+                                        index=False
+                                    )
+
+                                if deleted_rows == 0:
+                                    st.success("✅ Student CPMK data has been uploaded successfully!")
+                                else:
+                                    st.success("✅ Existing Student CPMK data has been updated successfully!")
+
+                            except Exception as e:
+
+                                st.error(f"❌ Database Error:\n{e}")
+        
     else:
         if user_key != "":
             st.write("Oops! That key doesn’t seem to work. Give it another shot! 😊")
 
 # --------------------------
-# Tab 2: Content and Activation for Tab 3
+# Tab 2: Content
 # --------------------------
 with tabs[1]:
     if st.session_state.tab2_activated:
+        st.subheader("📗 Course Evaluation Dashboard")
+
+        st.info("""
+        **This dashboard evaluates how each course contributes to the achievement of Capaian Pembelajaran Lulusan (CPL) through CPMK-CPL mapping.**
+        """)
+
+        with st.expander("❓ What questions can this dashboard answer?"):
+            st.markdown("""
+        - Which **Capaian Pembelajaran Lulusan (CPLs)** are addressed by this course?
+        - How strongly does each **CPMK contribute** to the intended CPLs?
+        - What percentage of students achieved **Excellent, Good, Poor, and Fail** for each addressed CPL?
+        - Are there any CPLs receiving **insufficient contribution** from this course?
+        - Does the current CPMK-CPL mapping support the intended graduate competencies?
+        """)
+                    
         st.write("### 📈 CPL Tabulation & Evaluation")
-       
-        st.markdown('<div style="text-align: justify; margin-bottom: 1em;">The CPL (Capaian Pembelajaran Lulusan) or Graduate Learning Outcomes refer to the set of competencies and achievements that students are expected to demonstrate upon completing their academic program. These outcomes are divided into several categories: Sikap (Attitudes/S), Pengetahuan (Knowledge/P), Keterampilan Umum (General Skills/KU), and Keterampilan Khusus (Specific Skills/KK).</div>', unsafe_allow_html=True)
-       
+              
         st.write("✅ Let's match each CPMK with the list of CPL outcomes from the list below! 👀")
     
-        st.write("===== CPMK VALUES =====")
-        st.write(df_merged[cpmk_columns].describe())
-
-        for c in cpmk_columns:
-            st.write(c)
-            st.write(df_merged[c].value_counts().sort_index())    
         df_merged_CPMK_CPL = df_merged.copy()
 
-        TOTAL_CPL = 14
-
-        cpl_columns = [
-            f"CPL{i}"
-            for i in range(1, TOTAL_CPL+1)
-        ]        
-        
+        cpl_columns = ["CPL1", "CPL2", "CPL3", "CPL4", "CPL5", "CPL6", "CPL7", "CPL8", "CPL9", "CPL10", "CPL11", "CPL12", "CPL13", "CPL14"]
         categories_criteria = ['Excellent', 'Good', 'Poor', 'Fail']
 
         cpmk_selections = {}
@@ -562,108 +710,74 @@ with tabs[1]:
             cpmk_selections[col] = st.multiselect(f"{col}", cpl_columns, placeholder=f"Choose the CPL of {col}")
         # st.write(cpmk_selections) 
 
+        # Collect only selected CPLs (preserves order and removes duplicates)
+        used_cpls = list(dict.fromkeys(
+            cpl
+            for selections in cpmk_selections.values()
+            for cpl in selections
+        ))
+
+        used_cpls = sorted(
+            used_cpls,
+            key=lambda x: int(re.search(r"\d+", x).group())
+        )
+
+        if len(used_cpls) == 0:
+            st.warning("Please select at least one CPL for a CPMK.")
+            st.stop()
+
         for col in cpl_columns:
             df_merged_CPMK_CPL[col] = 0
 
         for cpmk, selections in cpmk_selections.items():
+            for selection in selections:
+                # columns_to_update = [col for col in cpl_columns if selection in col]
+                columns_to_update = [selection]
 
-            for cpl in selections:
+                for col in columns_to_update:
+                    df_merged_CPMK_CPL[col] = df_merged_CPMK_CPL.apply(lambda row: categorize(row[cpmk]) if row[cpmk] is not np.nan else 'Fail', axis=1) 
 
-                df_merged_CPMK_CPL[cpl] = (
-                    df_merged_CPMK_CPL[cpmk]
-                    .apply(categorize)
-                )
+            # Create a new dataframe to hold the result
+            result_data = []
 
-        ########################################################
-        # Build Summary Table
-        ########################################################
-
-        result_data = []
-
-        for mata_kuliah in df_merged_CPMK_CPL["Mata Kuliah"].unique():
-
-            temp = df_merged_CPMK_CPL[
-                df_merged_CPMK_CPL["Mata Kuliah"] == mata_kuliah
-            ]
-
-            for kategori in categories_criteria:
-
-                row = {
-                    "Mata Kuliah": mata_kuliah,
-                    "Kriteria": kategori
-                }
-
-                for cpl in cpl_columns:
-
-                    pct = calculate_percentage(temp, cpl)
-
-                    row[cpl] = pct[kategori]
-
-                result_data.append(row)
-
-
-        st.write(df_merged_CPMK_CPL.head(20))
-        st.write("========== MAPPING ==========")
-        st.write(cpmk_selections)
-
-        st.write("========== DISTRIBUTION ==========")
-
-        for cpl in cpl_columns:
-
-            st.write("==========", cpl, "==========")
-
-            st.write(df_merged_CPMK_CPL[[cpl]])
-
-            st.write(
-                df_merged_CPMK_CPL[cpl]
-                .value_counts(dropna=False)
-            )
+            # Iterate over each unique "Mata Kuliah" (course) and calculate percentage for each CPL column
+            for mata_kuliah in df_merged_CPMK_CPL['Mata Kuliah'].unique():
+                for kriteria in categories_criteria:  # Iterate through categories Excellent, Good, Poor, Fail
+                    row = {'Mata Kuliah': mata_kuliah, 'Kriteria': kriteria}
+                    
+                    # For each CPL column, calculate percentage
+                    for cpl_column in cpl_columns:
+                        # Calculate percentage for the current CPL column and category
+                        percentage_data = calculate_percentage(df_merged_CPMK_CPL[df_merged_CPMK_CPL['Mata Kuliah'] == mata_kuliah], cpl_column)
+                        row[cpl_column] = percentage_data.get(kriteria, 0)  # Get the percentage for the current category
+                    
+                    result_data.append(row)
 
         # Convert the result_data to a DataFrame
         final_df = pd.DataFrame(result_data)
         cpl_columns_clean = [col for col in final_df.columns if col.startswith('CPL')]
         final_df.rename(columns={col: col.split('_')[0] for col in cpl_columns_clean}, inplace=True)
         st.markdown(f'<h4 style="font-size: 18px; font-weight: bold;">Table CPMK x CPL for {merged_processed_dfs["Mata Kuliah"].iloc[0]} ({merged_processed_dfs["Kode"].iloc[0]})</h4>', unsafe_allow_html=True)
-        st.write(final_df)
+        display_df = final_df[["Mata Kuliah", "Kriteria"] + used_cpls]
+        # st.write(display_df)
 
         # Define categories
         category_names = ['Excellent', 'Good', 'Poor', 'Fail']
         category_colors = ['#2196f3', '#43adfe', '#fa9595', '#f32121']   # Green for Excellent, Red for Fail
 
         # Create a function to plot the distribution
-        def plot_distribution(df, category_names, category_colors):
+        def plot_distribution(df, category_names, category_colors, used_cpls):
             # Prepare the data: sum the values for each category
-
             results = {}
-
-            # Only use CPLs that contain values
-            has_mapping = any(
-                len(v) > 0
-                for v in cpmk_selections.values()
-            )
-
-            if has_mapping:
-                active_cpl = [
-                    cpl
-                    for cpl in df.columns[2:]
-                    if df[cpl].sum() > 0
-                ]
-            else:
-                active_cpl = list(df.columns[2:])
-
-            for cpl in active_cpl:
-
-                counts = (
-                    df.groupby("Kriteria")[cpl]
-                    .sum()
-                    .reindex(category_names, fill_value=0)
-                )
-
+            # for cpl in df.columns[2:]:  # Skip 'Mata Kuliah' and 'Kriteria' columns
+            for cpl in used_cpls:
+                counts = df.groupby('Kriteria')[cpl].sum().reindex(category_names, fill_value=0)
                 results[cpl] = counts.tolist()
 
             # Convert results to a format for plotting
             labels = list(results.keys())
             data = np.array(list(results.values()))
+
             data_cum = data.cumsum(axis=1)
 
             fig, ax = plt.subplots(figsize=(9, 5))
@@ -701,7 +815,7 @@ with tabs[1]:
             return fig, ax
 
         # Call the function to plot the distribution
-        plot_distribution(final_df, category_names, category_colors)
+        plot_distribution(display_df, category_names, category_colors, used_cpls)
         st.pyplot(plt)
 
         # =====================================================
@@ -719,7 +833,18 @@ with tabs[1]:
         semester = parts[1]
         sql_df["academic_year"]=academic_year
         sql_df["semester"]=semester
-        sql_df["department"] = df_merged["Program Studi"].iloc[0]
+        kode_prodi = str(df_merged["Kode Prodi"].iloc[0]).strip()
+
+        if kode_prodi == "081":
+            program_studi = "Manajemen"
+        elif kode_prodi == "082":
+            program_studi = "Akuntansi"
+        elif kode_prodi == "083":
+            program_studi = "Perbankan Syariah"
+        else:
+            program_studi = "Unknown"
+
+        sql_df["department"] = program_studi
 
         # Rename existing columns
         sql_df.rename(columns={
@@ -777,6 +902,13 @@ with tabs[1]:
             .fillna(0)
         )
 
+        # st.subheader("📋 Preview Data to be Saved")
+
+        # st.dataframe(
+        #     sql_df,
+        #     use_container_width=True
+        # )
+
         # =====================================================
         # Save to MySQL
         # =====================================================
@@ -785,14 +917,35 @@ with tabs[1]:
 
             try:
 
-                sql_df.to_sql(
-                    "course_cpl_summary",
-                    con=engine_dfsql,
-                    if_exists="append",
-                    index=False
-                )
+                with engine_dfsql.begin() as conn:
 
-                st.success("✅ Successfully saved into MySQL!")
+                    delete_result = conn.execute(
+                        text("""
+                            DELETE FROM course_cpl_summary
+                            WHERE course_code = :course_code
+                            AND academic_year = :academic_year
+                            AND semester = :semester
+                        """),
+                        {
+                            "course_code": sql_df["course_code"].iloc[0],
+                            "academic_year": sql_df["academic_year"].iloc[0],
+                            "semester": sql_df["semester"].iloc[0]
+                        }
+                    )
+
+                    deleted_rows = delete_result.rowcount
+
+                    sql_df.to_sql(
+                        "course_cpl_summary",
+                        con=conn,
+                        if_exists="append",
+                        index=False
+                    )
+
+                if deleted_rows == 0:
+                    st.success("✅ Course CPL summary has been uploaded successfully!")
+                else:
+                    st.success("✅ Existing Course CPL summary has been updated successfully!")
 
             except Exception as e:
 
@@ -800,16 +953,5 @@ with tabs[1]:
 
     else:
         st.write("### 📈 CPL Tabulation & Evaluation is not activated yet ⛔️")
-
-
-
-
-
-
-
-
-
-
-
 
 
