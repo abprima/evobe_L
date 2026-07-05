@@ -184,7 +184,7 @@ with tabs[0]:
     st.subheader("📘 Lecturer Dashboard")
 
     st.info("""
-    **This dashboard helps lecturers monitor and evaluate Capaian Pembelajaran Mata Kuliah (CPMK) achievement to support Continuous Quality Improvement (CQI).**
+    This dashboard helps lecturers monitor and evaluate Capaian Pembelajaran Mata Kuliah (CPMK) achievement to support Continuous Quality Improvement (CQI).**
     """)
 
     with st.expander("❓ What questions can this dashboard answer?"):
