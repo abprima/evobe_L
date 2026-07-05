@@ -2,8 +2,6 @@ import os
 import re
 from dotenv import load_dotenv
 import pandas as pd
-from pandasai import PandasAI
-from pandasai.llm.openai import OpenAI
 import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
