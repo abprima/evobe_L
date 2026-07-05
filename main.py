@@ -201,7 +201,7 @@ with tabs[0]:
 
     st.write("### 📊 CPMK Tabulation & Evaluation")
     # Prompt the user to enter the key/password
-    valid_members = os.getenv("MEMBERS", "").split(",")
+    valid_members = st.secrets["MEMBERS"]
     user_key = st.text_input("🔐 Please type (or paste) your membership unique key, then press Enter:")
     # Define the correct password/key (you can change it as needed)
 
