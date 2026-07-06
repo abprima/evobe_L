@@ -184,7 +184,7 @@ with tabs[0]:
     st.subheader("📘 Lecturer Dashboard")
 
     st.info("""
-    This dashboard helps lecturers monitor and evaluate Capaian Pembelajaran Mata Kuliah (CPMK) achievement to support Continuous Quality Improvement (CQI).**
+    This dashboard helps lecturers monitor and evaluate Capaian Pembelajaran Mata Kuliah (CPMK) achievement to support Continuous Quality Improvement (CQI).
     """)
 
     with st.expander("❓ What questions can this dashboard answer?"):
@@ -959,7 +959,7 @@ with tabs[2]:
     st.subheader("📘 Department Dashboard")
 
     st.info("""
-    This dashboard enables evidence-based curriculum monitoring and Continuous Quality Improvement (CQI) by analyzing CPL achievement across all courses.**
+    This dashboard enables evidence-based curriculum monitoring and Continuous Quality Improvement (CQI) by analyzing CPL achievement across all courses.
     """)
 
     with st.expander("❓ What questions can this dashboard answer?"):
