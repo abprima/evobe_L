@@ -955,7 +955,7 @@ with tabs[1]:
 # --------------------------
 # Tab 2: Content
 # --------------------------
-with tabs[1]:
+with tabs[2]:
     st.subheader("📘 Department Dashboard")
 
     st.info("""
